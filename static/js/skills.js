@@ -1,4 +1,3 @@
-// Profile skills UI logic
 (function(){
   document.addEventListener("DOMContentLoaded", () => {
     const container = document.getElementById("skills-container");
@@ -119,6 +118,15 @@
         });
         if (res.ok) {
           chip.remove();
+          if (!container.querySelector(".skill-chip")) {
+            const empty = document.createElement("span");
+            empty.className = "skill-empty";
+            empty.textContent = "Навыки не указаны";
+            container.insertBefore(empty, addBtn);
+          }
+          addBtn.focus();
+        } else {
+          await reportError(res);
         }
       }
     });
@@ -135,6 +143,8 @@
       if (res.ok) {
         const skill = await res.json();
         appendChip(skill.id, skill.name);
+      } else {
+        await reportError(res);
       }
     }
 
@@ -150,7 +160,21 @@
       if (res.ok) {
         const skill = await res.json();
         appendChip(skill.id, skill.name);
+      } else {
+        await reportError(res);
       }
+    }
+
+    async function reportError(res) {
+      let message = "Не удалось изменить навыки. Обновите страницу и попробуйте ещё раз.";
+      try {
+        const data = await res.json();
+        if (data && data.message) message = data.message;
+      } catch (err) {
+        message = `${message} (код ${res.status})`;
+      }
+      if (window.toast) window.toast(message, { type: "error" });
+      else alert(message);
     }
 
     function appendChip(id, name) {
@@ -159,7 +183,14 @@
       const chip = document.createElement("span");
       chip.className = "skill-chip";
       chip.dataset.id = id;
-      chip.innerHTML = `${name} <button type="button" class="remove-skill-btn" aria-label="Удалить" title="Удалить">×</button>`;
+      chip.appendChild(document.createTextNode(`${name} `));
+      const removeBtn = document.createElement("button");
+      removeBtn.type = "button";
+      removeBtn.className = "remove-skill-btn";
+      removeBtn.setAttribute("aria-label", `Удалить навык ${name}`);
+      removeBtn.title = `Удалить навык ${name}`;
+      removeBtn.textContent = "×";
+      chip.appendChild(removeBtn);
 
       container.insertBefore(chip, addBtn);
 

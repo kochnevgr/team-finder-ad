@@ -1,0 +1,12 @@
+{% extends 'base.html' %}
+
+{% block title %}Страница не найдена{% endblock %}
+
+{% block content %}
+<div class="error-page">
+    <h1>Страница не найдена</h1>
+    <p>Возможно, проект или профиль удалён, а ссылка устарела.</p>
+    <a href="/projects/list/" class="black-button">На главную</a>
+    <a href="/users/list/" class="outline-button">К участникам</a>
+</div>
+{% endblock %}

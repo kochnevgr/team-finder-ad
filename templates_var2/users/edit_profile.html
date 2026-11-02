@@ -10,19 +10,19 @@
 
 {% block content %}
 <div class="profile-edit-container">
-    <h2 class="form-title">Редактирование профиля</h2>
+    <h1 class="form-title">Редактирование профиля</h1>
     <form method="post" enctype="multipart/form-data" class="profile-edit-form">
         {% csrf_token %}
 
         <div class="avatar-upload">
             <div class="avatar-preview">
                 {% if user.avatar %}
-                    <img src="{{ user.avatar.url }}" alt="Аватар">
+                    <img src="{{ user.avatar.url }}" alt="Текущий аватар" id="avatar-preview-img">
                 {% else %}
-                    <img src="{% static 'images/default-avatar.png' %}" alt="Аватар по умолчанию">
+                    <img src="{% static 'images/default-avatar.png' %}" alt="Текущий аватар" id="avatar-preview-img">
                 {% endif %}
                 <div class="overlay">
-                    <button type="button" onclick="document.getElementById('id_avatar').click()">Заменить</button>
+                    <button type="button" id="avatar-replace-btn" aria-label="Заменить аватар">Заменить</button>
                 </div>
             </div>
             {{ form.avatar }}
@@ -46,8 +46,16 @@
 
         <div class="form-row">
             <div class="form-field">
+                {{ form.email.label_tag }}
+                {{ form.email }}
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-field">
                 {{ form.phone.label_tag }}
                 {{ form.phone }}
+                <small class="field-hint" id="phone-hint">{{ form.phone.help_text }}</small>
             </div>
             <div class="form-field">
                 {{ form.github_url.label_tag }}
@@ -71,4 +79,8 @@
         </div>
     </form>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/avatar-preview.js' %}"></script>
 {% endblock %}

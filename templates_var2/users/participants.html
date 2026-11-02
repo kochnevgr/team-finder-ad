@@ -17,20 +17,23 @@
         </div>
     </div>
 
+    {% if all_skills %}
     <div class="skills-filter">
-        <span class="filter-label">Фильтр по навыкам:</span>
-        <div class="filter-chips">
+        <span class="filter-label" id="skills-filter-label">Фильтр по навыкам:</span>
+        <div class="filter-chips" role="group" aria-labelledby="skills-filter-label">
             {% for skill in all_skills %}
-            <a href="?skill={{ skill }}"
-               class="filter-chip {% if active_skill == skill %}active{% endif %}">
-                {{ skill }}
+            <a href="?skill={{ skill.name|urlencode }}"
+               class="filter-chip {% if active_skill == skill.name %}active{% endif %}"
+               {% if active_skill == skill.name %}aria-current="true"{% endif %}>
+                {{ skill.name }}
             </a>
             {% endfor %}
             {% if active_skill %}
-            <a href="/users/list" class="filter-reset">Сбросить</a>
+            <a href="/users/list/" class="filter-reset">Сбросить</a>
             {% endif %}
         </div>
     </div>
+    {% endif %}
 
     {% if page_obj.object_list %}
     <div class="participants-grid">
@@ -38,17 +41,18 @@
         <div class="participant-card">
             <div class="participant-card-header">
                 {% if participant.avatar %}
-                    <img src="{{ participant.avatar.url }}" alt="Аватар участника" class="participant-avatar">
+                    <img src="{{ participant.avatar.url }}" alt="" class="participant-avatar">
                 {% else %}
-                    <img src="{% static 'images/default-avatar.png' %}" alt="Аватар по умолчанию" class="participant-avatar">
+                    <img src="{% static 'images/default-avatar.png' %}" alt="" class="participant-avatar">
                 {% endif %}
             </div>
             <div class="participant-info">
-                <h3 class="participant-name">{{ participant.name }} {{ participant.surname }}</h3>
+                <h2 class="participant-name"><a href="/users/{{ participant.id }}/">{{ participant.name }} {{ participant.surname }}</a></h2>
                 <p class="participant-role">{{ participant.about|truncatechars:80 }}</p>
             </div>
             <div class="participant-card-footer">
-                <a href="/users/{{ participant.id }}" class="white-button">
+                <a href="/users/{{ participant.id }}/" class="white-button"
+                   aria-label="Посмотреть контакты: {{ participant.name }} {{ participant.surname }}">
                     {% include 'includes/svg/eye.html' %} Посмотреть контакты
                 </a>
             </div>
@@ -56,24 +60,26 @@
         {% endfor %}
     </div>
     {% if page_obj.has_other_pages %}
-    <div class="pagination">
+    <nav class="pagination" aria-label="Страницы">
         {% if page_obj.has_previous %}
-        <a href="?{{ query_prefix }}page={{ page_obj.previous_page_number }}" class="page-btn">←</a>
+        <a href="?{{ query_prefix }}page={{ page_obj.previous_page_number }}" class="page-btn" aria-label="Предыдущая страница">←</a>
         {% endif %}
         {% for num in page_obj.paginator.page_range %}
         {% if page_obj.number == num %}
-        <span class="page-btn active">{{ num }}</span>
+        <span class="page-btn active" aria-current="page">{{ num }}</span>
         {% else %}
         <a href="?{{ query_prefix }}page={{ num }}" class="page-btn">{{ num }}</a>
         {% endif %}
         {% endfor %}
         {% if page_obj.has_next %}
-        <a href="?{{ query_prefix }}page={{ page_obj.next_page_number }}" class="page-btn">→</a>
+        <a href="?{{ query_prefix }}page={{ page_obj.next_page_number }}" class="page-btn" aria-label="Следующая страница">→</a>
         {% endif %}
-    </div>
+    </nav>
     {% endif %}
+    {% elif active_skill %}
+    {% include 'includes/empty-project-card.html' with empty_icon="users" empty_title="Никого не нашлось" empty_message="Ни у кого из участников нет этого навыка. Выберите другой навык или сбросьте фильтр." button_link="/users/list/" button_text="Сбросить фильтр" %}
     {% else %}
-    {% include 'includes/empty-project-card.html' with empty_title="Пока нет участников" empty_message="Попробуйте сбросить фильтр по навыкам" button_link="/users/list" button_text="Сбросить" %}
+    {% include 'includes/empty-project-card.html' with empty_icon="users" empty_title="Пока нет участников" empty_message="Станьте первым — зарегистрируйтесь и расскажите о своих навыках." button_link="/users/register/" button_text="Зарегистрироваться" %}
     {% endif %}
 </div>
 {% endblock %}

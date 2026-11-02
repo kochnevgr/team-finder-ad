@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Профиль пользователя{% endblock %}
+{% block title %}{{ user.name }} {{ user.surname }}{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/project_list.css' %}">
@@ -9,48 +9,50 @@
 <link rel="stylesheet" href="{% static 'css/skills.css' %}">
 {% endblock %}
 
-{% with page_id="profile" %}
+{% block page_id %}profile{% endblock %}
+
 {% block content %}
 <div class="profile-container">
     <div class="profile-header">
         <div class="profile-info">
             {% if user.avatar %}
-                <img src="{{ user.avatar.url }}" alt="Аватар" class="profile-avatar">
+                <img src="{{ user.avatar.url }}" alt="" class="profile-avatar">
             {% else %}
-                <img src="{% static 'images/default-avatar.png' %}" alt="Аватар по умолчанию" class="profile-avatar">
+                <img src="{% static 'images/default-avatar.png' %}" alt="" class="profile-avatar">
             {% endif %}
             <div class="profile-details">
-                <h2 class="profile-name">{{ user.name }} {{ user.surname }}</h2>
+                <h1 class="profile-name">{{ user.name }} {{ user.surname }}</h1>
                 <p class="profile-description">
                     {{ user.about|default:"Описание профиля пока не добавлено." }}
                 </p>
                 <div class="profile-contacts">
                     {% if user.email %}
-                    <span>{% include 'includes/svg/email.html' %} {{ user.email }}</span>
+                    <span>{% include 'includes/svg/email.html' %} <a href="mailto:{{ user.email }}">{{ user.email }}</a></span>
                     {% endif %}
                     {% if user.phone %}
-                    <span>{% include 'includes/svg/phone.html' %} {{ user.phone }}</span>
+                    <span>{% include 'includes/svg/phone.html' %} <a href="tel:{{ user.phone }}">{{ user.phone }}</a></span>
                     {% endif %}
                     {% if user.github_url %}
                     <span>{% include 'includes/svg/github.html' %}
-                        <a href="{{ user.github_url }}" target="_blank">GitHub</a>
+                        <a href="{{ user.github_url }}" target="_blank" rel="noopener">GitHub</a>
                     </span>
                     {% endif %}
                 </div>
             </div>
         </div>
         <div class="profile-actions">
-            <a href="#"
+            <button type="button"
                class="black-button black-button-share share-button"
-               data-url="/users/{{ user.id }}">
+               data-url="/users/{{ user.id }}/"
+               aria-label="Скопировать ссылку на профиль" title="Скопировать ссылку на профиль">
                 {% include 'includes/svg/share.html' %}
-            </a>
+            </button>
             {% if request.user.id == user.id %}
-            <a href="/users/edit-profile" class="black-button">
+            <a href="/users/edit-profile/" class="black-button">
                 {% include 'includes/svg/pen.html' %}
                 Редактировать
             </a>
-            <a href="/projects/create-project" class="black-button">
+            <a href="/projects/create-project/" class="black-button">
                 {% include 'includes/svg/plus.html' %}
                 Добавить проект
             </a>
@@ -58,14 +60,14 @@
         </div>
     </div>
 
-    <h3>Навыки</h3>
+    <h2 class="profile-section-title">Навыки</h2>
     <div class="profile-skills">
         <div id="skills-container" class="skills-container" data-user-id="{{ user.id }}">
             {% for skill in user.skills.all %}
                 <span class="skill-chip" data-id="{{ skill.id }}">
                     {{ skill.name }}
                     {% if request.user.id == user.id %}
-                        <button type="button" class="remove-skill-btn" aria-label="Удалить" title="Удалить">×</button>
+                        <button type="button" class="remove-skill-btn" aria-label="Удалить навык {{ skill.name }}" title="Удалить навык {{ skill.name }}">×</button>
                     {% endif %}
                 </span>
             {% empty %}
@@ -77,56 +79,36 @@
             {% endif %}
         </div>
         <div id="skill-input-wrapper" class="skill-input-wrapper hidden">
+            <label for="skill-input" class="visually-hidden">Название навыка</label>
             <input type="text" id="skill-input" placeholder="Введите навык..." autocomplete="off"/>
             <ul id="skill-suggestions" class="skill-suggestions hidden"></ul>
         </div>
     </div>
 
-    <h3>Проекты ({{ user.owned_projects.all|length }})</h3>
+    <h2 class="profile-section-title">Проекты ({{ user.owned_projects.all|length }})</h2>
 
     <div class="collapsed-project-grid">
         {% for project in user.owned_projects.all %}
-        <div class="collapsed-project-card">
-            <div class="collapsed-project-card-header">
-                <h4><a href="/projects/{{ project.id }}">{{ project.name }}</a></h4>
-                <span class="project-status-black">
-                    {% if project.status == "open" %}
-                        Открыт
-                    {% elif project.status == "closed" %}
-                        Закрыт
-                    {% else %}
-                        {{ project.status }}
-                    {% endif %}
-                </span>
-            </div>
-            <div class="collapsed-project-card-body">
-                <div class="collapsed-project-card-description">
-                    <p class="project-card-description">{{ project.description|truncatechars:150 }}</p>
-                </div>
-                <div class="collapsed-project-card-footer">
-                    <p class="project-date">{{ project.created_at|date:"d.m.Y" }}</p>
-                    {% with count=project.participants.count %}
-                    <div class="project-participants">
-                        {% include 'includes/svg/participants.html' %}
-                        {{ count }}
-                        {% if count|add:'-11'|divisibleby:100 or count|add:'-12'|divisibleby:100 or count|add:'-13'|divisibleby:100 or count|add:'-14'|divisibleby:100 %}
-                            участников
-                        {% elif count|add:'-1'|divisibleby:10 %}
-                            участник
-                        {% elif count|add:'-2'|divisibleby:10 or count|add:'-3'|divisibleby:10 or count|add:'-4'|divisibleby:10 %}
-                            участника
-                        {% else %}
-                            участников
-                        {% endif %}
-                    </div>
-                    {% endwith %}
-                </div>
-            </div>
-        </div>
+            {% include 'includes/collapsed-project-card.html' %}
         {% empty %}
-        <p>Пока нет проектов</p>
+        <p class="profile-empty">
+            Пока нет проектов.
+            {% if request.user.id == user.id %}<a href="/projects/create-project/">Создать первый проект</a>{% endif %}
+        </p>
+        {% endfor %}
+    </div>
+
+    <h2 class="profile-section-title">Участвует в проектах ({{ participated_projects|length }})</h2>
+
+    <div class="collapsed-project-grid">
+        {% for project in participated_projects %}
+            {% include 'includes/collapsed-project-card.html' %}
+        {% empty %}
+        <p class="profile-empty">
+            Пока не участвует в чужих проектах.
+            {% if request.user.id == user.id %}<a href="/projects/list/">Найти проект</a>{% endif %}
+        </p>
         {% endfor %}
     </div>
 </div>
 {% endblock %}
-{% endwith %}

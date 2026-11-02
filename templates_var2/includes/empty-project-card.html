@@ -1,8 +1,14 @@
 {% load static %}
 
-<div class="empty-project-card not-favorite">
-    {% include 'includes/svg/heart.html' %}
+<div class="empty-project-card">
+    {% if empty_icon == "users" %}
+        {% include 'includes/svg/participants.html' %}
+    {% else %}
+        {% include 'includes/svg/plus.html' %}
+    {% endif %}
     <h3>{{ empty_title }}</h3>
     <p>{{ empty_message }}</p>
-    <button onclick="window.location.href='{{ button_link }}'" class="black-button">{{ button_text }}</button>
+    {% if button_link %}
+    <a href="{{ button_link }}" class="black-button">{{ button_text }}</a>
+    {% endif %}
 </div>

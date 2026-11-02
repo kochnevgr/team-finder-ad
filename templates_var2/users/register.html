@@ -9,18 +9,36 @@
 
 {% block content %}
 <div class="auth-card">
-    <h2>Регистрация</h2>
-    <form method="post">
+    <h1>Регистрация</h1>
+    <form method="post" novalidate>
         {% csrf_token %}
         <div class="name-fields">
-            <div>{{ form.name.label_tag }} {{ form.name }}</div>
-            <div>{{ form.surname.label_tag }} {{ form.surname }}</div>
+            <div class="form-field">
+                {{ form.name.label_tag }}
+                {{ form.name }}
+                {{ form.name.errors }}
+            </div>
+            <div class="form-field">
+                {{ form.surname.label_tag }}
+                {{ form.surname }}
+                {{ form.surname.errors }}
+            </div>
         </div>
-        {{ form.email.label_tag }} {{ form.email }}
-        {{ form.password.label_tag }} {{ form.password }}
-        {% for error in form.errors.values %}
-        <p style="color: red;">{{error}}</p>
-        {% endfor %}
+        <div class="form-field">
+            {{ form.email.label_tag }}
+            {{ form.email }}
+            {{ form.email.errors }}
+        </div>
+        <div class="form-field">
+            {{ form.password.label_tag }}
+            {{ form.password }}
+            {{ form.password.errors }}
+        </div>
+        {% if form.non_field_errors %}
+        <div class="non-field-errors" role="alert">
+            {% for error in form.non_field_errors %}<p>{{ error }}</p>{% endfor %}
+        </div>
+        {% endif %}
         <button type="submit">Зарегистрироваться</button>
     </form>
     <p class="auth-link">Уже есть аккаунт? <a href="{% url 'users:login' %}">Войти</a></p>

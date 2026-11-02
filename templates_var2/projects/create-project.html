@@ -11,12 +11,12 @@
 
 {% block content %}
 <div class="project-create-container">
-  <h2 class="form-title">{% if is_edit %}Редактирование проекта{% else %}Создание проекта{% endif %}</h2>
+  <h1 class="form-title">{% if is_edit %}Редактирование проекта{% else %}Создание проекта{% endif %}</h1>
   <form method="post" class="project-create-form">
     {% csrf_token %}
 
     <div class="form-field">
-      {{ form.name.label_tag }}
+      <label for="{{ form.name.id_for_label }}">Название: <span class="required-mark" aria-hidden="true">*</span></label>
       {{ form.name }}
     </div>
 
@@ -46,8 +46,8 @@
     {% endif %}
 
     <div class="form-actions">
-      <a href="/" class="cancel-button">Отмена</a>
-      <button type="submit" class="save-button">{% if is_edit %}Сохранить{% else %}Опубликовать{% endif %}</button>
+      <a href="{% if is_edit %}/projects/{{ form.instance.pk }}/{% else %}/projects/list/{% endif %}" class="cancel-button">Отмена</a>
+      <button type="submit" class="save-button">{% if is_edit %}Сохранить изменения{% else %}Опубликовать{% endif %}</button>
     </div>
   </form>
 </div>

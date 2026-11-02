@@ -1,0 +1,158 @@
+name: CI/CD
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  PYTHON_VERSION: "3.12"
+
+jobs:
+  lint:
+    name: Flake8
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install flake8
+        run: pip install flake8==7.1.1
+
+      - name: Run flake8
+        run: flake8 .
+
+  tests:
+    name: Tests
+    needs: lint
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: team_finder
+          POSTGRES_USER: team_finder
+          POSTGRES_PASSWORD: team_finder
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U team_finder -d team_finder"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DJANGO_SECRET_KEY: ci-secret-key
+      DJANGO_DEBUG: "False"
+      POSTGRES_DB: team_finder
+      POSTGRES_USER: team_finder
+      POSTGRES_PASSWORD: team_finder
+      POSTGRES_HOST: localhost
+      POSTGRES_PORT: "5432"
+      TASK_VERSION: "2"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Django checks
+        run: |
+          python manage.py check
+          python manage.py makemigrations --check --dry-run
+
+      - name: Run tests
+        run: python manage.py test
+
+  build:
+    name: Build and push Docker image
+    needs: tests
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set image name
+        run: echo "IMAGE=ghcr.io/${GITHUB_REPOSITORY,,}" >> "$GITHUB_ENV"
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ env.IMAGE }}:latest
+            ${{ env.IMAGE }}:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy:
+    name: Deploy to server
+    needs: build
+    if: >-
+      github.event_name == 'push' &&
+      github.ref == 'refs/heads/main' &&
+      vars.DEPLOY_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set image name
+        run: echo "IMAGE=ghcr.io/${GITHUB_REPOSITORY,,}:${GITHUB_SHA}" >> "$GITHUB_ENV"
+
+      - name: Copy compose files to server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          port: ${{ secrets.SSH_PORT || 22 }}
+          source: "docker-compose.yml,docker/nginx/default.conf"
+          target: ${{ secrets.DEPLOY_PATH }}
+
+      - name: Pull image and restart containers
+        uses: appleboy/ssh-action@v1.2.0
+        env:
+          IMAGE: ${{ env.IMAGE }}
+          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+          GHCR_USER: ${{ github.actor }}
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          port: ${{ secrets.SSH_PORT || 22 }}
+          envs: IMAGE,DEPLOY_PATH,GHCR_USER,GHCR_TOKEN
+          script: |
+            set -e
+            cd "$DEPLOY_PATH"
+            test -f .env
+            echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USER" --password-stdin
+            if grep -q '^WEB_IMAGE=' .env; then
+              sed -i "s|^WEB_IMAGE=.*|WEB_IMAGE=$IMAGE|" .env
+            else
+              printf '\nWEB_IMAGE=%s\n' "$IMAGE" >> .env
+            fi
+            docker compose pull web nginx db
+            docker compose up -d --no-build --remove-orphans
+            docker image prune -f
