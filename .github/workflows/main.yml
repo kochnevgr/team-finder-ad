@@ -53,7 +53,6 @@ jobs:
       POSTGRES_PASSWORD: team_finder
       POSTGRES_HOST: localhost
       POSTGRES_PORT: "5432"
-      TASK_VERSION: "2"
     steps:
       - uses: actions/checkout@v4
 

@@ -1,5 +1,7 @@
+from http import HTTPStatus
+
 from django.contrib import messages
-from django.contrib.auth import login, logout, update_session_auth_hash
+from django.contrib.auth import get_user_model, login, logout, update_session_auth_hash
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import PasswordChangeForm
 from django.db.models import Prefetch
@@ -12,19 +14,19 @@ from django.views.decorators.http import require_GET, require_POST
 from core.decorators import login_required_json
 from core.http import json_error, parse_request_data
 from core.pagination import build_query_prefix, paginate
+from core.constants import SKILL_NAME_MAX_LENGTH, SKILL_SUGGESTIONS_LIMIT
 from projects.models import Project
 from users.forms import LoginForm, ProfileForm, RegisterForm
-from users.models import Skill, User
+from users.models import Skill
 
-SKILL_SUGGESTIONS_LIMIT = 10
-SKILL_NAME_MAX_LENGTH = Skill._meta.get_field("name").max_length
+User = get_user_model()
 
 
 def register(request):
     if request.user.is_authenticated:
         return redirect("projects:list")
     form = RegisterForm(request.POST or None)
-    if request.method == "POST" and form.is_valid():
+    if form.is_valid():
         form.save()
         messages.success(request, "Аккаунт создан. Войдите, чтобы продолжить.")
         return redirect("users:login")
@@ -35,7 +37,7 @@ def login_view(request):
     if request.user.is_authenticated:
         return redirect("projects:list")
     form = LoginForm(request, data=request.POST or None)
-    if request.method == "POST" and form.is_valid():
+    if form.is_valid():
         login(request, form.user)
         next_url = request.GET.get("next")
         if next_url and url_has_allowed_host_and_scheme(
@@ -69,13 +71,13 @@ def user_list(request):
 
 
 @ensure_csrf_cookie
-def user_detail(request, pk):
+def user_detail(request, user_id):
     owned_projects = Project.objects.prefetch_related("participants")
     queryset = User.objects.prefetch_related(
         "skills",
         Prefetch("owned_projects", queryset=owned_projects),
     )
-    profile = get_object_or_404(queryset, pk=pk)
+    profile = get_object_or_404(queryset, pk=user_id)
     participated_projects = (
         profile.participated_projects.exclude(owner=profile)
         .select_related("owner")
@@ -90,23 +92,23 @@ def edit_profile(request):
     profile = get_object_or_404(User, pk=request.user.pk)
     old_avatar = profile.avatar.name
     form = ProfileForm(request.POST or None, request.FILES or None, instance=profile)
-    if request.method == "POST" and form.is_valid():
+    if form.is_valid():
         profile = form.save()
         if old_avatar and old_avatar != profile.avatar.name:
             profile.avatar.storage.delete(old_avatar)
         messages.success(request, "Профиль сохранён.")
-        return redirect("users:detail", pk=profile.pk)
+        return redirect("users:detail", user_id=profile.pk)
     return render(request, "users/edit_profile.html", {"form": form})
 
 
 @login_required
 def change_password(request):
     form = PasswordChangeForm(request.user, request.POST or None)
-    if request.method == "POST" and form.is_valid():
+    if form.is_valid():
         user = form.save()
         update_session_auth_hash(request, user)
         messages.success(request, "Пароль изменён.")
-        return redirect("users:detail", pk=user.pk)
+        return redirect("users:detail", user_id=user.pk)
     return render(request, "users/change_password.html", {"form": form})
 
 
@@ -125,9 +127,9 @@ def skill_search(request):
 
 @require_POST
 @login_required_json
-def skill_add(request, pk):
-    if request.user.pk != pk:
-        return json_error("Можно изменять только свои навыки", 403)
+def skill_add(request, user_id):
+    if request.user.pk != user_id:
+        return json_error("Можно изменять только свои навыки", HTTPStatus.FORBIDDEN)
 
     data = parse_request_data(request)
     skill_id = data.get("skill_id")
@@ -138,17 +140,17 @@ def skill_add(request, pk):
         try:
             skill = Skill.objects.filter(pk=int(skill_id)).first()
         except (TypeError, ValueError):
-            return json_error("Некорректный идентификатор навыка", 400)
+            return json_error("Некорректный идентификатор навыка", HTTPStatus.BAD_REQUEST)
         if skill is None:
-            return json_error("Навык не найден", 404)
+            return json_error("Навык не найден", HTTPStatus.NOT_FOUND)
     elif name:
         if len(name) > SKILL_NAME_MAX_LENGTH:
-            return json_error("Слишком длинное название навыка", 400)
+            return json_error("Слишком длинное название навыка", HTTPStatus.BAD_REQUEST)
         skill, created = Skill.objects.get_or_create(
             name__iexact=name, defaults={"name": name}
         )
     else:
-        return json_error("Не передан навык", 400)
+        return json_error("Не передан навык", HTTPStatus.BAD_REQUEST)
 
     added = not request.user.skills.filter(pk=skill.pk).exists()
     if added:
@@ -167,13 +169,13 @@ def skill_add(request, pk):
 
 @require_POST
 @login_required_json
-def skill_remove(request, pk, skill_id):
-    if request.user.pk != pk:
-        return json_error("Можно изменять только свои навыки", 403)
+def skill_remove(request, user_id, skill_id):
+    if request.user.pk != user_id:
+        return json_error("Можно изменять только свои навыки", HTTPStatus.FORBIDDEN)
     skill = Skill.objects.filter(pk=skill_id).first()
     if skill is None:
-        return json_error("Навык не найден", 404)
+        return json_error("Навык не найден", HTTPStatus.NOT_FOUND)
     if not request.user.skills.filter(pk=skill.pk).exists():
-        return json_error("У пользователя нет такого навыка", 404)
+        return json_error("У пользователя нет такого навыка", HTTPStatus.NOT_FOUND)
     request.user.skills.remove(skill)
     return JsonResponse({"status": "ok"})

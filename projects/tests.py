@@ -1,9 +1,11 @@
+from django.contrib.auth import get_user_model
 from django.core.management import call_command
 from django.urls import reverse
 
 from core.testing import BaseTestCase
 from projects.models import Project
-from users.models import User
+
+User = get_user_model()
 
 
 class ProjectPagesTests(BaseTestCase):

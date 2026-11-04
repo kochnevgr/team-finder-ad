@@ -111,6 +111,7 @@
 }
 
 .filter-reset {
+    align-self: center;
     font-size: 13px;
     margin-left: 12px;
     text-decoration: underline;

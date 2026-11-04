@@ -1,11 +1,8 @@
-import re
 from urllib.parse import urlparse
 
 from django.core.exceptions import ValidationError
 
-GITHUB_HOSTS = ("github.com", "www.github.com")
-PHONE_PATTERN = re.compile(r"^(\+7|8)\d{10}$")
-PHONE_SEPARATORS = re.compile(r"[\s\-()]")
+from core.constants import GITHUB_HOSTS, PHONE_PATTERN, PHONE_SEPARATORS
 
 
 def validate_github_url(value):

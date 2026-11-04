@@ -1,9 +1,10 @@
 import shutil
 import tempfile
 
+from django.contrib.auth import get_user_model
 from django.test import TestCase, override_settings
 
-from users.models import User
+User = get_user_model()
 
 TEST_MEDIA_ROOT = tempfile.mkdtemp(prefix="team_finder_test_media_")
 

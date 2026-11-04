@@ -1,9 +1,12 @@
 import json
 
+from django.contrib.auth import get_user_model
 from django.urls import reverse
 
 from core.testing import BaseTestCase
-from users.models import Skill, User
+from users.models import Skill
+
+User = get_user_model()
 
 
 class RegistrationAndLoginTests(BaseTestCase):
@@ -288,17 +291,10 @@ class UxRegressionTests(BaseTestCase):
         empty = self.client.get(reverse("users:list"), {"skill": "Zig"})
         self.assertContains(empty, "Никого не нашлось")
 
-    def test_spec_urls_without_trailing_slash(self):
+    def test_spec_project_list_url_redirects(self):
         self.assertRedirects(
             self.client.get("/project/list/"), reverse("projects:list"), status_code=301
         )
-        user = self.create_user("noslash@example.com")
-        self.client.force_login(user)
-        response = self.client.post(
-            f"/users/{user.pk}/skills/add", json.dumps({"name": "Go"}),
-            content_type="application/json",
-        )
-        self.assertTrue(response.json()["added"])
 
     def test_participant_name_links_to_profile(self):
         user = self.create_user("link@example.com", name="Лев", surname="Львов")

@@ -1,9 +1,24 @@
 from django import forms
-from django.contrib.auth import authenticate, password_validation
+from django.contrib.auth import authenticate, get_user_model, password_validation
+from django.contrib.auth.forms import BaseUserCreationForm, UserChangeForm
 from django.core.exceptions import ValidationError
 
+from core.constants import PHONE_INPUT_MAX_LENGTH, USER_ABOUT_MAX_LENGTH
 from core.validators import normalize_phone
-from users.models import User
+
+User = get_user_model()
+
+
+class AdminUserCreationForm(BaseUserCreationForm):
+    class Meta:
+        model = User
+        fields = ("email", "name", "surname")
+
+
+class AdminUserChangeForm(UserChangeForm):
+    class Meta:
+        model = User
+        fields = "__all__"
 
 
 class RegisterForm(forms.ModelForm):
@@ -80,7 +95,7 @@ class ProfileForm(forms.ModelForm):
     phone = forms.CharField(
         label="Телефон",
         required=False,
-        max_length=20,
+        max_length=PHONE_INPUT_MAX_LENGTH,
         help_text="Формат: +7XXXXXXXXXX или 8XXXXXXXXXX",
         widget=forms.TextInput(
             attrs={
@@ -99,7 +114,7 @@ class ProfileForm(forms.ModelForm):
             "name": forms.TextInput(attrs={"autocomplete": "given-name"}),
             "surname": forms.TextInput(attrs={"autocomplete": "family-name"}),
             "avatar": forms.FileInput(attrs={"accept": "image/*"}),
-            "about": forms.Textarea(attrs={"rows": 4, "maxlength": 256}),
+            "about": forms.Textarea(attrs={"rows": 4, "maxlength": USER_ABOUT_MAX_LENGTH}),
             "email": forms.EmailInput(attrs={"autocomplete": "email"}),
             "github_url": forms.URLInput(
                 attrs={"autocomplete": "url", "placeholder": "https://github.com/username"}

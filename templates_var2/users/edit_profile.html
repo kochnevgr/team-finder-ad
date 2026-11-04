@@ -11,7 +11,7 @@
 {% block content %}
 <div class="profile-edit-container">
     <h1 class="form-title">Редактирование профиля</h1>
-    <form method="post" enctype="multipart/form-data" class="profile-edit-form">
+    <form method="post" enctype="multipart/form-data" class="profile-edit-form" novalidate>
         {% csrf_token %}
 
         <div class="avatar-upload">
@@ -26,28 +26,33 @@
                 </div>
             </div>
             {{ form.avatar }}
+            {{ form.avatar.errors }}
         </div>
 
         <div class="form-row">
             <div class="form-field">
                 {{ form.name.label_tag }}
                 {{ form.name }}
+                {{ form.name.errors }}
             </div>
             <div class="form-field">
                 {{ form.surname.label_tag }}
                 {{ form.surname }}
+                {{ form.surname.errors }}
             </div>
         </div>
 
         <div class="form-field">
             {{ form.about.label_tag }}
             {{ form.about }}
+            {{ form.about.errors }}
         </div>
 
         <div class="form-row">
             <div class="form-field">
                 {{ form.email.label_tag }}
                 {{ form.email }}
+                {{ form.email.errors }}
             </div>
         </div>
 
@@ -56,25 +61,25 @@
                 {{ form.phone.label_tag }}
                 {{ form.phone }}
                 <small class="field-hint" id="phone-hint">{{ form.phone.help_text }}</small>
+                {{ form.phone.errors }}
             </div>
             <div class="form-field">
                 {{ form.github_url.label_tag }}
                 {{ form.github_url }}
+                {{ form.github_url.errors }}
             </div>
         </div>
 
-        {% if form.errors %}
-        <div class="form-errors">
-            {% for field, errors in form.errors.items %}
-                {% for error in errors %}
-                    <p>{{ error }}</p>
-                {% endfor %}
+        {% if form.non_field_errors %}
+        <div class="form-errors" role="alert">
+            {% for error in form.non_field_errors %}
+                <p>{{ error }}</p>
             {% endfor %}
         </div>
         {% endif %}
 
         <div class="form-actions">
-            <a href="/users/{{ user.id }}" class="cancel-button">Отмена</a>
+            <a href="/users/{{ user.id }}/" class="cancel-button">Отмена</a>
             <button type="submit" class="save-button">Сохранить</button>
         </div>
     </form>

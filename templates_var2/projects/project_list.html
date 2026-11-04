@@ -12,12 +12,14 @@
 {% block content %}
 <div class="project-container">
     <div class="project-header">
-        <h1 class="project-title">Актуальные проекты</h1>
+        <div class="project-heading">
+            <h1 class="project-title">Актуальные проекты</h1>
+            <p class="project-subtitle">Найдите интересный проект и присоединитесь к команде</p>
+        </div>
         {% if user.is_authenticated and page_obj.object_list %}
             <a href="/projects/create-project/" class="black-button">+ Создать проект</a>
         {% endif %}
     </div>
-    <p class="project-subtitle">Найдите интересный проект и присоединитесь к команде</p>
 
     <div class="projects-grid">
         {% for project in page_obj %}

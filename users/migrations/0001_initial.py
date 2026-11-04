@@ -1,7 +1,7 @@
 import core.validators
 import django.db.models.functions.text
 import django.utils.timezone
-import users.models
+import users.managers
 from django.db import migrations, models
 
 
@@ -54,7 +54,7 @@ class Migration(migrations.Migration):
                 'ordering': ['-date_joined', '-id'],
             },
             managers=[
-                ('objects', users.models.UserManager()),
+                ('objects', users.managers.UserManager()),
             ],
         ),
     ]

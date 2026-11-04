@@ -18,9 +18,10 @@
 
 .profile-info {
     display: flex;
-    align-items: center;
     gap: 20px;
-    align-items: flex-start
+    align-items: flex-start;
+    flex: 1;
+    min-width: 0;
 }
 
 .profile-avatar {
@@ -51,13 +52,14 @@
 
 .profile-contacts {
     display: flex;
-    gap: 16px;
+    flex-wrap: wrap;
+    gap: 8px 16px;
     font-size: 13px;
     color: #666;
 }
 
 .profile-actions {
-    min-width: 415px;
+    flex-shrink: 0;
     display: flex;
     gap: 10px;
     justify-content: flex-end;

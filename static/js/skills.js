@@ -48,7 +48,10 @@
         const data = await res.json();
 
         suggestions.innerHTML = "";
-        data.forEach(s => {
+        const owned = new Set(
+          [...container.querySelectorAll(".skill-chip[data-id]")].map(chip => chip.dataset.id)
+        );
+        data.filter(s => !owned.has(String(s.id))).forEach(s => {
           const li = document.createElement("li");
           li.textContent = s.name;
           li.dataset.id = s.id;
@@ -65,7 +68,7 @@
           suggestions.appendChild(liNew);
         }
 
-        suggestions.classList.remove("hidden");
+        suggestions.classList.toggle("hidden", !suggestions.children.length);
       }, 200);
     });
 

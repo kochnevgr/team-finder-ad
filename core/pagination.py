@@ -1,6 +1,6 @@
 from django.core.paginator import Paginator
 
-PAGE_SIZE = 12
+from core.constants import PAGE_SIZE
 
 
 def paginate(request, queryset, per_page=PAGE_SIZE):
